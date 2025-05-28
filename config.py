@@ -1,5 +1,5 @@
 import os
-TOKEN = "7955189803:AAE69R2agp_E3j4N-KUME0XEdi_6kOF9sOU"
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 CAMINHO_BASE= r"C:\Users\E712155\EDP\O365_Poder Publico_ES - Documentos\Base bot"
 CSV_ORGAOS = "listas/orgaos.csv"
@@ -9,3 +9,4 @@ CSV_ASSUNTOS = "listas/assuntos.csv"
 CSV_REGISTRO = r"C:\Users\E712155\EDP\O365_Poder Publico_ES - Documentos\Base bot\data\registros.csv"
 PAGINACAO_TAMANHO = 5
 COLABORADORES = ["Orlando", "Derielle", "Ricardo", "Vania", "Danillo"]
+

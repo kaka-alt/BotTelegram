@@ -1,1 +1,1 @@
-worker: python BotTelegram\ 5.0/main.py
+procfile_content = "worker: python bottelegram/main.py"
