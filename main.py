@@ -21,7 +21,9 @@ async def start(update, context):
     await update.message.reply_text("Olá! Use /iniciar para começar o registro de uma ocorrência.")
 
 def main():
-    application = ApplicationBuilder().token(os.getenv("BOT_TOKEN")).build()
+    
+    token = "7955189803:AAE69R2agp_E3j4N-KUME0XEdi_6kOF9sOU"   
+    application = ApplicationBuilder().token(token).build()
 
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('iniciar', handlers.iniciar_colaborador)],
@@ -49,10 +51,10 @@ def main():
             "PRO": [MessageHandler(filters.TEXT & ~filters.COMMAND, pro)],
             "OBSERVACAO_ESCOLHA": [CallbackQueryHandler(observacao_escolha, pattern="^(add_obs|skip_obs)$")],
             "OBSERVACAO_DIGITAR": [MessageHandler(filters.TEXT & ~filters.COMMAND, observacao_digitar)],
-            "MAIS_DEMANDAS": [CallbackQueryHandler(mais_demandas, pattern="^(mais_demanda)$")],
+            "MAIS_DEMANDAS": [CallbackQueryHandler(mais_demandas, pattern="^(mais_demanda)$\$")],
             "RESUMO": [CallbackQueryHandler(handlers.resumo)],
-            "CONFIRMACAO": [CallbackQueryHandler(handlers.confirmacao, pattern="^(confirmar|cancelar)$")],
-            "CONFIRMACAO_FINAL": [CallbackQueryHandler(confirmacao, pattern="^(confirmar_salvar|cancelar_resumo)$")],
+            "CONFIRMACAO": [CallbackQueryHandler(handlers.confirmacao, pattern="^(confirmar|cancelar)\$")],
+            "CONFIRMACAO_FINAL": [CallbackQueryHandler(confirmacao, pattern="^(confirmar_salvar|cancelar_resumo)\$")],
         },
         fallbacks=[CommandHandler('cancelar', cancelar)],
     )
