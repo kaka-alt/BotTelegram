@@ -3,128 +3,89 @@ import os
 import pandas as pd
 from telegram import InlineKeyboardButton
 from datetime import datetime
-from config import *
-from globals import user_data  
+from config import * 
+from globals import user_data
+import logging
 
-# Funções utilitárias para o bot
+logger = logging.getLogger(__name__)  
 
-def build_menu(buttons, n_cols, footer_buttons=None):
-    menu = [buttons[i:i + n_cols] for i in range(0, len(buttons), n_cols)]
-    if footer_buttons:
-        menu.append(footer_buttons)
-    return menu
 
-def botoes_pagina(lista, pagina, prefix="", por_pagina=5):
-    inicio = pagina * por_pagina
-    fim = inicio + por_pagina
-    sublista = lista[inicio:fim]
-
-    buttons = [
-        [InlineKeyboardButton(text=item, callback_data=f"{prefix}{item}")]
-        for item in sublista
-    ]
-
-    # Adicione paginação e botões extras aqui se quiser
-    buttons.append([
-        InlineKeyboardButton("⬅️ Voltar", callback_data=f"{prefix}voltar"),
-        InlineKeyboardButton("➡️ Próximo", callback_data=f"{prefix}proximo"),
-    ])
-    buttons.append([
-        InlineKeyboardButton("📝 Inserir manualmente", callback_data=f"{prefix}inserir_manual"),
-        InlineKeyboardButton("🔄 Refazer busca", callback_data=f"{prefix}refazer_busca"),
-    ])
-
-    return buttons, pagina
-
-# Lista de Órgãos Públicos
-def ler_orgaos_csv():
-    df = pd.read_csv(CSV_ORGAOS)
-    return df['nome'].dropna().tolist()
-
-def salvar_orgao(novo_orgao: str):
-    caminho_orgaos = CSV_ORGAOS
-    
-    # Garante que a pasta existe
-    os.makedirs(os.path.dirname(caminho_orgaos), exist_ok=True)
-    
-    # Remove espaços extras e padroniza
-    novo_orgao = novo_orgao.strip()
-
-    # Verifica se o órgão já existe
-    orgaos_existentes = set()
-    if os.path.exists(caminho_orgaos):
-        with open(caminho_orgaos, mode='r', encoding='utf-8') as f:
-            orgaos_existentes = {linha.strip() for linha in f.readlines()}
-
-    # Se não existe, adiciona
-    if novo_orgao and novo_orgao not in orgaos_existentes:
-        with open(caminho_orgaos, mode='a', newline='', encoding='utf-8') as f:
-            f.write(f"{novo_orgao}\n")
-
-# Lista Assuntos
-def ler_assuntos_csv():
-    df = pd.read_csv(CSV_ASSUNTOS)
-    return df['assunto'].dropna().tolist()
-
-def salvar_assunto(novo_assunto: str):
-    caminho_assuntos = CSV_ASSUNTOS
-    
-    # Garante que a pasta existe
-    os.makedirs(os.path.dirname(caminho_assuntos), exist_ok=True)
-    
-    # Remove espaços extras e padroniza
-    novo_assunto = novo_assunto.strip()
-
-    # Verifica se o assunto já existe
-    assuntos_existentes = set()
-    if os.path.exists(caminho_assuntos):
-        with open(caminho_assuntos, mode='r', encoding='utf-8') as f:
-            assuntos_existentes = {linha.strip() for linha in f.readlines()}
-
-    # Se não existe, adiciona
-    if novo_assunto and novo_assunto not in assuntos_existentes:
-        with open(caminho_assuntos, mode='a', newline='', encoding='utf-8') as f:
-            f.write(f"{novo_assunto}\n")
-# Salvamento de CSV em pasta externa
 
 def salvar_csv(data: dict):
-    print("DADOS A SEREM SALVOS:", data)
+    logger.info(f"Salvar informaçoes em data: {data}")
 
     ano, semana, _ = datetime.now().isocalendar()
-    # Garante pastas
+
+    # Caminhos dos diretorios
     pasta_data = os.path.join(CAMINHO_BASE, "data")
     pasta_backup = os.path.join(pasta_data, "backup")
-    pasta_semanal = os.path.join(pasta_data, "semanal")
-    os.makedirs(pasta_semanal, exist_ok=True)
-    os.makedirs(pasta_data, exist_ok=True)
-    os.makedirs(pasta_backup, exist_ok=True)
+    pasta_semanal = os.path.join(pasta_data, f"{ano}-semana-{semana}-registros.csv")
+    caminho_principal = CSV_REGISTRO
+    caminho_backup = os.path.join(pasta_backup, f"{datetime.now().strftime('%Y-%m-%d')}-backup.csv")
 
-    # Arquivo principal (fixo)
-    caminho_principal = (CSV_REGISTRO)
+    logger.info(f"pasta_data: {pasta_data}")
+    logger.info(f"pasta_backup: {pasta_backup}")
+    logger.info(f"pasta_semanal: {pasta_semanal}")
+    logger.info(f"caminho_principal: {caminho_principal}")
+    logger.info(f"caminho_backup: {caminho_backup}")
 
-    caminho_semanal = os.path.join(pasta_semanal, f"{ano}-semana-{semana}-registros.csv")
+    # cria diretorios caso não exista
+    try:
+        os.makedirs(pasta_semanal, exist_ok=True)
+        logger.info(f"Directory created: {pasta_semanal}")
+    except FileExistsError:
+        logger.info(f"Directory already exists: {pasta_semanal}")
+    except Exception as e:
+        logger.error(f"Error creating directory {pasta_semanal}: {e}")
 
-    # Arquivo de backup diário
-    data_hoje = datetime.now().strftime('%Y-%m-%d')
-    caminho_backup = os.path.join(pasta_backup, f"{data_hoje}-backup.csv")
+    try:
+        os.makedirs(pasta_data, exist_ok=True)
+        logger.info(f"Directory created: {pasta_data}")
+    except FileExistsError:
+        logger.info(f"Directory already exists: {pasta_data}")
+    except Exception as e:
+        logger.error(f"Error creating directory {pasta_data}: {e}")
 
-    # Cabeçalhos
+    try:
+        os.makedirs(pasta_backup, exist_ok=True)
+        logger.info(f"Directory created: {pasta_backup}")
+    except FileExistsError:
+        logger.info(f"Directory already exists: {pasta_backup}")
+    except Exception as e:
+        logger.error(f"Error creating directory {pasta_backup}: {e}")
+
     cabecalho = [
         'colaborador', 'orgao_publico', 'figura_publica', 'cargo',
         'assunto', 'municipio', 'data', 'foto',
         'demanda', 'ov', 'pro', 'observacao'
     ]
 
-    # Função para escrever nos arquivos
     def escrever_linhas_csv(caminho_arquivo):
         arquivo_existe = os.path.isfile(caminho_arquivo)
-        with open(caminho_arquivo, mode='a', newline='', encoding='utf-8') as arquivo:
-            writer = csv.DictWriter(arquivo, fieldnames=cabecalho)
-            if not arquivo_existe:
-                writer.writeheader()
-            demandas = data.get('demandas')
-            if demandas:
-                for demanda in demandas:
+        try:
+            with open(caminho_arquivo, mode='a', newline='', encoding='utf-8') as arquivo:
+                writer = csv.DictWriter(arquivo, fieldnames=cabecalho)
+                if not arquivo_existe:
+                    writer.writeheader()
+                demandas = data.get('demandas')
+                if demandas:
+                    for demanda in demandas:
+                        linha = {
+                            'colaborador': data.get('colaborador'),
+                            'orgao_publico': data.get('orgao_publico'),
+                            'figura_publica': data.get('figura_publica'),
+                            'cargo': data.get('cargo'),
+                            'assunto': data.get('assunto'),
+                            'municipio': data.get('municipio'),
+                            'data': data.get('data'),
+                            'foto': data.get('foto'),
+                            'demanda': demanda.get('texto'),
+                            'ov': demanda.get('ov'),
+                            'pro': demanda.get('pro'),
+                            'observacao': demanda.get('observacao', '')
+                        }
+                        writer.writerow(linha)
+                else:
                     linha = {
                         'colaborador': data.get('colaborador'),
                         'orgao_publico': data.get('orgao_publico'),
@@ -134,36 +95,16 @@ def salvar_csv(data: dict):
                         'municipio': data.get('municipio'),
                         'data': data.get('data'),
                         'foto': data.get('foto'),
-                        'demanda': demanda.get('texto'),
-                        'ov': demanda.get('ov'),
-                        'pro': demanda.get('pro'),
-                        'observacao': demanda.get('observacao', '')
+                        'demanda': '',
+                        'ov': '',
+                        'pro': '',
+                        'observacao': ''
                     }
                     writer.writerow(linha)
-            else:
-                # Escreve uma linha mesmo sem demandas
-                linha = {
-                    'colaborador': data.get('colaborador'),
-                    'orgao_publico': data.get('orgao_publico'),
-                    'figura_publica': data.get('figura_publica'),
-                    'cargo': data.get('cargo'),
-                    'assunto': data.get('assunto'),
-                    'municipio': data.get('municipio'),
-                    'data': data.get('data'),
-                    'foto': data.get('foto'),
-                    'demanda': '',
-                    'ov': '',
-                    'pro': '',
-                    'observacao': ''
-                }
-                writer.writerow(linha)
+                logger.info(f"Successfully wrote to {caminho_arquivo}")
+        except Exception as e:
+            logger.error(f"Error writing to {caminho_arquivo}: {e}")
 
-
-    # Salva no CSV principal (fixo)
     escrever_linhas_csv(caminho_principal)
-
-    # Salva no backup diário
     escrever_linhas_csv(caminho_backup)
-
-    # Salva no CSV semanal
-    escrever_linhas_csv(caminho_semanal)
+    escrever_linhas_csv(pasta_semanal)
